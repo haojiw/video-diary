@@ -1,4 +1,5 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import * as FileSystem from 'expo-file-system';
 
 export interface DiaryEntry {
   id: string;
@@ -51,8 +52,20 @@ export const storageService = {
   async deleteEntry(id: string): Promise<void> {
     try {
       const entries = await this.getAllEntries();
+      
+      const entryToDelete = entries.find(entry => entry.id === id);
+
       const filteredEntries = entries.filter(entry => entry.id !== id);
       await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(filteredEntries));
+
+      if (entryToDelete) {
+        try {
+          await FileSystem.deleteAsync(entryToDelete.audioUri);
+        } catch (fileError) {
+          console.error('Error deleting file:', fileError);
+          // Don't re-throw, as the entry is already deleted from storage
+        }
+      }
     } catch (error) {
       console.error('Error deleting entry:', error);
       throw error;

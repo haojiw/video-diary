@@ -258,6 +258,7 @@ export default function RecordScreen() {
   const onVideoLoad = (status: any) => {
     if (status.isLoaded) {
       setDuration(status.durationMillis || 0);
+      setIsPlaying(true);
     }
   };
 
@@ -339,12 +340,12 @@ export default function RecordScreen() {
               useNativeControls={false}
               resizeMode={ResizeMode.COVER}
               isLooping={false}
-              shouldPlay={false}
+              shouldPlay={true}
               onLoad={onVideoLoad}
               onPlaybackStatusUpdate={onVideoStatusUpdate}
             />
             <TouchableOpacity style={styles.videoPlayButton} onPress={toggleVideoPlayback}>
-              <Ionicons name={isPlaying ? 'pause' : 'play'} size={60} color="#fff" />
+              <Ionicons name={isPlaying ? 'pause' : 'play'} size={50} color="#fff" />
             </TouchableOpacity>
           </>
         ) : (
@@ -475,11 +476,8 @@ const styles = StyleSheet.create({
     position: 'absolute', 
     top: '50%', 
     left: '50%', 
-    transform: [{ translateX: -30 }, { translateY: -30 }],
+    transform: [{ translateX: -25 }, { translateY: -25 }],
     zIndex: 5,
-    backgroundColor: 'rgba(0,0,0,0.5)',
-    borderRadius: 30,
-    padding: 10
   },
   progressContainer: {
     position: 'absolute',
@@ -489,6 +487,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     zIndex: 10,
+    textAlign: 'center',
   },
   slider: {
     flex: 1,

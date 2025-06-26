@@ -79,8 +79,8 @@ export const AudioPlayer: React.FC<AudioPlayerProps> = ({ audioUri }) => {
     <View style={styles.container}>
       <TouchableOpacity style={styles.playButton} onPress={playPauseAudio}>
         <Ionicons
-          name={isPlaying ? 'pause' : 'play'}
-          size={24}
+          name={isPlaying ? 'pause-circle' : 'play-circle'}
+          size={50}
           color="#2C3A61"
         />
       </TouchableOpacity>
@@ -111,12 +111,6 @@ const styles = StyleSheet.create({
     marginVertical: 24,
   },
   playButton: {
-    width: 60,
-    height: 60,
-    borderRadius: 30,
-    backgroundColor: '#FDFDFE',
-    borderWidth: 2,
-    borderColor: '#2C3A61',
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 16,

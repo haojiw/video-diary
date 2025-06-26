@@ -3,6 +3,7 @@ import { useFocusEffect } from '@react-navigation/native';
 import { router } from 'expo-router';
 import { useCallback, useState } from 'react';
 import {
+  Animated,
   FlatList,
   SafeAreaView,
   StatusBar,
@@ -11,7 +12,7 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
-import { Directions, Gesture, GestureDetector } from 'react-native-gesture-handler';
+import { Directions, Gesture, GestureDetector, Swipeable } from 'react-native-gesture-handler';
 import { runOnJS } from 'react-native-reanimated';
 
 import { EntryCard } from '../components/EntryCard';
@@ -42,6 +43,17 @@ export default function HomeScreen() {
     router.push('/record');
   };
 
+  const handleDelete = async (id: string) => {
+    try {
+      await storageService.deleteEntry(id);
+      // Optimistically update UI
+      setEntries(prevEntries => prevEntries.filter(entry => entry.id !== id));
+    } catch (error) {
+      console.error('Failed to delete entry:', error);
+      // Optionally, show an alert to the user
+    }
+  };
+
   // Create gesture for swipe left navigation
   const swipeGesture = Gesture.Fling()
     .direction(Directions.RIGHT)
@@ -49,8 +61,25 @@ export default function HomeScreen() {
       runOnJS(navigateToRecord)();
     });
 
+  const renderRightActions = (progress: Animated.AnimatedInterpolation<number>, dragX: Animated.AnimatedInterpolation<number>, id: string) => {
+    const trans = dragX.interpolate({
+      inputRange: [-80, 0],
+      outputRange: [0, 80],
+      extrapolate: 'clamp',
+    });
+    return (
+      <TouchableOpacity style={styles.deleteButton} onPress={() => handleDelete(id)}>
+        <Animated.View style={{ transform: [{ translateX: trans }] }}>
+          <Ionicons name="trash-outline" size={28} color="#fff" />
+        </Animated.View>
+      </TouchableOpacity>
+    );
+  };
+  
   const renderEntry = ({ item }: { item: DiaryEntry }) => (
-    <EntryCard entry={item} />
+    <Swipeable renderRightActions={(progress, dragX) => renderRightActions(progress, dragX, item.id)}>
+      <EntryCard entry={item} />
+    </Swipeable>
   );
 
   const renderEmptyState = () => (
@@ -143,5 +172,12 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     opacity: 0.4,
     marginTop: 16,
+  },
+  deleteButton: {
+    backgroundColor: '#ff4444',
+    justifyContent: 'center',
+    alignItems: 'center',
+    width: 80,
+    height: '100%',
   },
 });
