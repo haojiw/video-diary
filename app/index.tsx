@@ -1,5 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
+import { router } from 'expo-router';
 import { useCallback, useState } from 'react';
 import {
   FlatList,
@@ -10,14 +11,14 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
+import { Directions, Gesture, GestureDetector } from 'react-native-gesture-handler';
+import { runOnJS } from 'react-native-reanimated';
 
 import { EntryCard } from '../components/EntryCard';
-import { RecordingModal } from '../components/RecordingModal';
 import { DiaryEntry, storageService } from '../utils/storage';
 
 export default function HomeScreen() {
   const [entries, setEntries] = useState<DiaryEntry[]>([]);
-  const [isRecordingModalVisible, setIsRecordingModalVisible] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
 
   const loadEntries = async () => {
@@ -37,26 +38,16 @@ export default function HomeScreen() {
     }, [])
   );
 
-  const handleSaveRecording = async (
-    audioUri: string,
-    rawTranscript: string,
-    cleanedTranscript: string
-  ) => {
-    try {
-      const newEntry: DiaryEntry = {
-        id: Date.now().toString(),
-        timestamp: new Date().toISOString(),
-        audioUri,
-        rawTranscript,
-        cleanedTranscript,
-      };
-
-      await storageService.saveEntry(newEntry);
-      setEntries(prev => [newEntry, ...prev]);
-    } catch (error) {
-      console.error('Error saving entry:', error);
-    }
+  const navigateToRecord = () => {
+    router.push('/record');
   };
+
+  // Create gesture for swipe left navigation
+  const swipeGesture = Gesture.Fling()
+    .direction(Directions.RIGHT)
+    .onEnd(() => {
+      runOnJS(navigateToRecord)();
+    });
 
   const renderEntry = ({ item }: { item: DiaryEntry }) => (
     <EntryCard entry={item} />
@@ -65,6 +56,7 @@ export default function HomeScreen() {
   const renderEmptyState = () => (
     <View style={styles.emptyState}>
       <Text style={styles.emptyText}>Your reflection begins here.</Text>
+      <Text style={styles.hintText}>Swipe right to start recording →</Text>
     </View>
   );
 
@@ -73,33 +65,27 @@ export default function HomeScreen() {
       <StatusBar barStyle="dark-content" backgroundColor="#FDFDFE" />
       
       <View style={styles.header}>
+        <TouchableOpacity style={styles.cameraButton} onPress={navigateToRecord}>
+          <Ionicons name="camera-outline" size={28} color="#1A1A1A" />
+        </TouchableOpacity>
         <Text style={styles.title}>Reflections</Text>
       </View>
 
-      <FlatList
-        data={entries}
-        renderItem={renderEntry}
-        keyExtractor={(item) => item.id}
-        contentContainerStyle={[
-          styles.listContainer,
-          entries.length === 0 && styles.emptyListContainer,
-        ]}
-        ListEmptyComponent={renderEmptyState}
-        showsVerticalScrollIndicator={false}
-      />
-
-      <TouchableOpacity
-        style={styles.fab}
-        onPress={() => setIsRecordingModalVisible(true)}
-      >
-        <Ionicons name="add" size={32} color="#FDFDFE" />
-      </TouchableOpacity>
-
-      <RecordingModal
-        visible={isRecordingModalVisible}
-        onClose={() => setIsRecordingModalVisible(false)}
-        onSave={handleSaveRecording}
-      />
+      <GestureDetector gesture={swipeGesture}>
+        <FlatList
+          data={entries}
+          renderItem={renderEntry}
+          keyExtractor={(item) => item.id}
+          contentContainerStyle={[
+            styles.listContainer,
+            entries.length === 0 && styles.emptyListContainer,
+          ]}
+          ListEmptyComponent={renderEmptyState}
+          showsVerticalScrollIndicator={false}
+          // Ensure horizontal gestures don't interfere with vertical scrolling
+          scrollEventThrottle={1}
+        />
+      </GestureDetector>
     </SafeAreaView>
   );
 }
@@ -113,6 +99,15 @@ const styles = StyleSheet.create({
     paddingHorizontal: 24,
     paddingTop: 20,
     paddingBottom: 32,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  cameraButton: {
+    position: 'absolute',
+    left: 24,
+    top: 20,
+    padding: 8,
+    zIndex: 1,
   },
   title: {
     fontSize: 32,
@@ -141,20 +136,12 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     opacity: 0.6,
   },
-  fab: {
-    position: 'absolute',
-    bottom: 32,
-    right: 24,
-    width: 64,
-    height: 64,
-    borderRadius: 32,
-    backgroundColor: '#2C3A61',
-    justifyContent: 'center',
-    alignItems: 'center',
-    elevation: 8,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
+  hintText: {
+    fontSize: 14,
+    color: '#1A1A1A',
+    fontFamily: 'System',
+    textAlign: 'center',
+    opacity: 0.4,
+    marginTop: 16,
   },
 });

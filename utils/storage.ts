@@ -6,6 +6,7 @@ export interface DiaryEntry {
   audioUri: string;
   rawTranscript: string;
   cleanedTranscript: string;
+  type?: 'video' | 'audio'; // Optional field for backward compatibility
 }
 
 const STORAGE_KEY = 'diary_entries';
