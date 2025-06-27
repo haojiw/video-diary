@@ -2,16 +2,17 @@ import { Ionicons } from '@expo/vector-icons';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useState } from 'react';
 import {
-    ActivityIndicator,
-    Alert,
-    SafeAreaView,
-    StatusBar,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View,
+  ActivityIndicator,
+  Alert,
+  SafeAreaView,
+  StatusBar,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from 'react-native';
 
+import { apiService } from '../utils/apiService';
 import { DiaryEntry, storageService } from '../utils/storage';
 
 export default function SaveEntryScreen() {
@@ -22,8 +23,6 @@ export default function SaveEntryScreen() {
 
   const [isProcessing, setIsProcessing] = useState(true);
   const [currentStep, setCurrentStep] = useState('transcribing');
-  const [rawTranscript, setRawTranscript] = useState('');
-  const [cleanedTranscript, setCleanedTranscript] = useState('');
 
   useEffect(() => {
     if (!recordingUri) {
@@ -35,42 +34,18 @@ export default function SaveEntryScreen() {
     processRecording();
   }, [recordingUri]);
 
-  const transcribeAudio = async (uri: string): Promise<string> => {
-    // Simulate API call delay for transcription
-    await new Promise(resolve => setTimeout(resolve, 2000));
-    
-    // In a real implementation, this would call a transcription service
-    // For demo purposes, returning a placeholder
-    return recordingMode === 'video' 
-      ? "This is a raw transcript from your video recording. It contains all the natural speech patterns, ums, and pauses exactly as they were spoken in the video."
-      : "This is a raw transcript of your voice recording. It contains all the ums, ahs, and natural speech patterns exactly as you spoke them.";
-  };
-
-  const cleanTranscript = async (text: string): Promise<string> => {
-    // Simulate processing delay for text cleaning
-    await new Promise(resolve => setTimeout(resolve, 1500));
-    
-    // In a real implementation, this would use AI to clean and organize the text
-    // For demo purposes, returning a cleaned version
-    return recordingMode === 'video'
-      ? "This is a thoughtfully organized reflection from your video, refined and structured while preserving your authentic voice and core insights."
-      : "This is a cleaned and organized version of your thoughts, refined while preserving your authentic voice and meaning.";
-  };
-
   const processRecording = async () => {
     try {
       setIsProcessing(true);
       setCurrentStep('transcribing');
 
-      // Step 1: Transcribe
-      const transcript = await transcribeAudio(recordingUri);
-      setRawTranscript(transcript);
+      // Step 1: Transcribe using the service
+      const transcript = await apiService.transcribeAudio(recordingUri);
 
       setCurrentStep('cleaning');
 
-      // Step 2: Clean transcript
-      const cleaned = await cleanTranscript(transcript);
-      setCleanedTranscript(cleaned);
+      // Step 2: Clean transcript using the service
+      const cleaned = await apiService.cleanTranscript(transcript);
 
       setCurrentStep('saving');
 
@@ -81,7 +56,7 @@ export default function SaveEntryScreen() {
         audioUri: recordingUri,
         rawTranscript: transcript,
         cleanedTranscript: cleaned,
-        type: recordingMode, // Add type to differentiate video/audio
+        type: recordingMode,
       };
 
       await storageService.saveEntry(newEntry);
@@ -94,21 +69,15 @@ export default function SaveEntryScreen() {
         router.replace('/');
       }, 1500);
 
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error processing recording:', error);
       setIsProcessing(false);
       Alert.alert(
         'Processing Failed',
-        'Failed to process your recording. Please try again.',
+        `An error occurred: ${error.message || 'Please try again.'}`, // Display a more specific error
         [
-          {
-            text: 'Try Again',
-            onPress: processRecording,
-          },
-          {
-            text: 'Cancel',
-            onPress: () => router.back(),
-          },
+          { text: 'Try Again', onPress: processRecording },
+          { text: 'Cancel', style: 'cancel', onPress: () => router.back() },
         ]
       );
     }

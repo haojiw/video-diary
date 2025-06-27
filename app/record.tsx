@@ -1,11 +1,11 @@
 import { Ionicons } from '@expo/vector-icons';
 import Slider from '@react-native-community/slider';
-import { useIsFocused } from '@react-navigation/native';
+import { useFocusEffect, useIsFocused } from '@react-navigation/native';
 import { Audio, ResizeMode, Video } from 'expo-av';
 import { Camera, CameraType, CameraView } from 'expo-camera';
 import * as MediaLibrary from 'expo-media-library';
 import { router } from 'expo-router';
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator, Alert,
   Dimensions, Linking, SafeAreaView,
@@ -187,6 +187,15 @@ export default function RecordScreen() {
       Alert.alert('Error', 'Could not proceed with the recording.');
     }
   };
+
+  useFocusEffect(
+    useCallback(() => {
+      // We reset the state ONLY if there isn't a recording in progress.
+      if (!isRecording) {
+        handleRetake();
+      }
+    }, [isRecording]) // Dependency array
+  );
 
   const handleRetake = () => {
     setRecordingUri(null);
